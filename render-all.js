@@ -31,9 +31,12 @@ if (!fs.existsSync(inputDir)) {
 
 const projectDir = path.join(__dirname);
 const publicDir = path.join(projectDir, 'public');
-const outDir = path.join(projectDir, 'out');
 
-// Create output directory
+// Output to the same directory as input files
+const resolvedInputDir = path.resolve(inputDir);
+const outDir = resolvedInputDir;
+
+// Create output directory if needed
 if (!fs.existsSync(outDir)) {
   fs.mkdirSync(outDir, { recursive: true });
 }
@@ -155,5 +158,5 @@ tempFiles.forEach(f => {
 console.log(`\n🎉 All done!`);
 console.log(`   ✅ Success: ${successCount}`);
 console.log(`   ❌ Failed: ${failCount}`);
-console.log('📂 Output:');
+console.log(`📂 Output directory: ${outDir}`);
 execSync(`ls -lh "${outDir}"`, { stdio: 'inherit' });
