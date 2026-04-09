@@ -72,7 +72,7 @@ wavFiles.forEach((wavFile, index) => {
 
   // Copy to public
   fs.copyFileSync(path.join(inputDir, wavFile), tempWavPath);
-  fs.copyFileSync(path.join(inputDir, srtFile), tempSrtPath);
+  fs.copyFileSync(srtFile, tempSrtPath);
   tempFiles.push(tempWavPath, tempSrtPath);
 
   // Get duration using ffprobe
