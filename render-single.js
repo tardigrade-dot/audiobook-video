@@ -10,12 +10,15 @@ const path = require('path');
 const { execSync } = require('child_process');
 
 // Parse arguments
-let wavFile, srtFile, outputName, title;
+let wavFile, srtFile, outputName, title, customFps;
 const args = process.argv.slice(2);
 
 for (let i = 0; i < args.length; i++) {
   if (args[i] === '--title' && args[i+1]) {
     title = args[i+1];
+    i++;
+  } else if (args[i] === '--fps' && args[i+1]) {
+    customFps = parseInt(args[i+1], 10);
     i++;
   } else if (!wavFile) {
     wavFile = args[i];
@@ -27,17 +30,26 @@ for (let i = 0; i < args.length; i++) {
 }
 
 outputName = outputName || 'output';
+title = title || '有声书';
+const fps = customFps || 10; // Default 10fps for audiobook (static content)
 
-if (!wavFile || !srtFile) {
-  console.log('Usage: node render-single.js <wav-file> <srt-file> [output-name] [--title "My Title"]');
+if (!wavFile) {
+  console.log('Usage: node render-single.js <wav-file> [srt-file] [output-name] [--title "My Title"] [--fps 10]');
   console.log('');
   console.log('Examples:');
-  console.log('  node render-single.js audio.wav subtitles.srt');
-  console.log('  node render-single.js audio.wav subtitles.srt my-video --title "My Journey"');
+  console.log('  node render-single.js example.wav subtitles.srt');
+  console.log('  node render-single.js example.wav (auto-detects audio.srt)');
+  console.log('  node render-single.js example.wav subtitles.srt my-video --title "My Journey"');
+  console.log('  node render-single.js example.wav --fps 5');
   process.exit(1);
 }
 
-// Check if files exist
+// Auto-detect SRT file if not provided
+if (!srtFile) {
+  const wavPath = path.parse(wavFile);
+  srtFile = path.join(wavPath.dir, wavPath.name + '.srt');
+}
+
 if (!fs.existsSync(wavFile)) {
   console.error(`❌ Audio file not found: ${wavFile}`);
   process.exit(1);
@@ -64,8 +76,8 @@ console.log(`   Subs:  ${path.basename(srtFile)}`);
 console.log(`   Output: out/${outputName}.mp4`);
 
 // Copy files to public
-fs.copyFileSync(wavFile, path.join(publicDir, 'audio.wav'));
-fs.copyFileSync(srtFile, path.join(publicDir, 'content.srt'));
+fs.copyFileSync(wavFile, path.join(publicDir, 'example.wav'));
+fs.copyFileSync(srtFile, path.join(publicDir, 'example.srt'));
 console.log('   ✅ Copied files to public/');
 
 // Get duration
@@ -80,8 +92,8 @@ try {
   console.log('   ⚠️  Could not get duration, using default (460s)');
 }
 
-const durationFrames = Math.floor(duration * 30);
-console.log(`   ⏱️  Duration: ${duration.toFixed(1)}s (${durationFrames} frames)`);
+const durationFrames = Math.floor(duration * fps);
+console.log(`   ⏱️  Duration: ${duration.toFixed(1)}s (${durationFrames} frames @ ${fps}fps)`);
 
 // Temporarily update Root.tsx with correct duration
 const rootFilePath = path.join(projectDir, 'src', 'Root.tsx');
@@ -101,7 +113,7 @@ try {
   console.log('');
   
   execSync(
-    `npx remotion render Audiobook "${outputFile}" --codec h264`,
+    `npx remotion render Audiobook "${outputFile}" --codec h264 --fps ${fps} --concurrency 100% --x264-preset veryfast --jpeg-quality 80 --hardware-acceleration if-possible --props '${JSON.stringify({ title })}'`,
     { stdio: 'inherit', cwd: projectDir }
   );
   

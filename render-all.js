@@ -2,9 +2,8 @@
 
 /**
  * Batch renderer for audiobook videos
+ * Finds all .wav + .srt pairs in a directory and renders them
  * Usage: node render-all.js <directory>
- * 
- * Finds all .wav + .srt pairs in directory and renders them
  */
 
 const fs = require('fs');
@@ -12,10 +11,16 @@ const path = require('path');
 const { execSync } = require('child_process');
 
 const inputDir = process.argv[2];
+const customFps = (() => {
+  const idx = process.argv.indexOf('--fps');
+  return idx !== -1 && process.argv[idx + 1] ? parseInt(process.argv[idx + 1], 10) : 10;
+})();
+const fps = customFps || 10;
 
 if (!inputDir) {
-  console.log('Usage: node render-all.js <directory>');
+  console.log(`Usage: node render-all.js <directory> [--fps 10]`);
   console.log('Example: node render-all.js /Users/larry/Downloads/audiobooks');
+  console.log('Example: node render-all.js /path/to/audiobooks --fps 5');
   process.exit(1);
 }
 
@@ -40,27 +45,33 @@ const wavFiles = files.filter(f => f.endsWith('.wav'));
 console.log(`📁 Found ${wavFiles.length} audio files in ${inputDir}`);
 console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
 
+// Track success/failure
+let successCount = 0;
+let failCount = 0;
+const tempFiles = [];
+
 wavFiles.forEach((wavFile, index) => {
   const baseName = path.basename(wavFile, '.wav');
   const srtFile = path.join(inputDir, baseName + '.srt');
-  
+
   if (!fs.existsSync(srtFile)) {
     console.log(`⚠️  Skip ${baseName} (no .srt file)`);
     return;
   }
-  
+
   console.log(`\n▶️  [${index + 1}/${wavFiles.length}] ${baseName}`);
-  
+
+  // Use unique temp names to avoid conflicts
+  const tempWavName = `batch-${Date.now()}-${index}.wav`;
+  const tempSrtName = `batch-${Date.now()}-${index}.srt`;
+  const tempWavPath = path.join(publicDir, tempWavName);
+  const tempSrtPath = path.join(publicDir, tempSrtName);
+
   // Copy to public
-  fs.copyFileSync(
-    path.join(inputDir, wavFile),
-    path.join(publicDir, 'audio.wav')
-  );
-  fs.copyFileSync(
-    path.join(inputDir, srtFile),
-    path.join(publicDir, 'content.srt')
-  );
-  
+  fs.copyFileSync(path.join(inputDir, wavFile), tempWavPath);
+  fs.copyFileSync(path.join(inputDir, srtFile), tempSrtPath);
+  tempFiles.push(tempWavPath, tempSrtPath);
+
   // Get duration using ffprobe
   let duration = 460;
   try {
@@ -72,34 +83,77 @@ wavFiles.forEach((wavFile, index) => {
   } catch (e) {
     console.log('⚠️  Could not get duration, using default');
   }
-  
-  const durationFrames = Math.floor(duration * 30);
-  console.log(`   Duration: ${duration.toFixed(1)}s (${durationFrames} frames)`);
-  
+
+  const durationFrames = Math.floor(duration * fps);
+  console.log(`   Duration: ${duration.toFixed(1)}s (${durationFrames} frames @ ${fps}fps)`);
+
   // Render
   const outputFile = path.join(outDir, `${baseName}.mp4`);
-  
+
   try {
     console.log('   🎬 Rendering...');
-    const propsArg = title ? `--props '{"title": "${title}"}'` : '';
-    
+
+    // Temporarily update Root.tsx with correct duration and file names
+    const rootFilePath = path.join(projectDir, 'src', 'Root.tsx');
+    const originalRoot = fs.readFileSync(rootFilePath, 'utf-8');
+    const modifiedRoot = originalRoot
+      .replace(
+        /durationInFrames=\{13500\}/,
+        `durationInFrames={${durationFrames}}`
+      )
+      .replace(
+        /staticFile\("audio\.wav"\)/,
+        `staticFile("${tempWavName}")`
+      )
+      .replace(
+        /staticFile\("content\.srt"\)/,
+        `staticFile("${tempSrtName}")`
+      );
+    fs.writeFileSync(rootFilePath, modifiedRoot);
+
     execSync(
-      `npx remotion render Audiobook "${outputFile}" --codec h264 ${propsArg}`,
+      `npx remotion render Audiobook "${outputFile}" --codec h264 --fps ${fps} --concurrency 100% --x264-preset veryfast --jpeg-quality 80 --hardware-acceleration if-possible --props '${JSON.stringify({ title: baseName })}'`,
       { stdio: 'inherit', cwd: projectDir }
     );
-    
+
+    // Restore Root.tsx
+    fs.writeFileSync(rootFilePath, originalRoot);
+
     if (fs.existsSync(outputFile)) {
       const stats = fs.statSync(outputFile);
       const sizeMB = (stats.size / 1024 / 1024).toFixed(1);
       console.log(`✅ Success: ${outputFile} (${sizeMB} MB)`);
+      successCount++;
     }
   } catch (error) {
     console.error(`❌ Failed: ${baseName}`);
+    failCount++;
+
+    // Restore Root.tsx even on failure
+    const rootFilePath = path.join(projectDir, 'src', 'Root.tsx');
+    try {
+      const originalRoot = fs.readFileSync(rootFilePath, 'utf-8');
+      fs.writeFileSync(rootFilePath, originalRoot);
+    } catch (e) {
+      // ignore
+    }
   }
-  
+
   console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
 });
 
-console.log('\n🎉 All done!');
+// Cleanup temp files
+console.log('\n🧹 Cleaning up temporary files...');
+tempFiles.forEach(f => {
+  try {
+    if (fs.existsSync(f)) fs.unlinkSync(f);
+  } catch (e) {
+    // ignore
+  }
+});
+
+console.log(`\n🎉 All done!`);
+console.log(`   ✅ Success: ${successCount}`);
+console.log(`   ❌ Failed: ${failCount}`);
 console.log('📂 Output:');
 execSync(`ls -lh "${outDir}"`, { stdio: 'inherit' });

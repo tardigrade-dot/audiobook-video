@@ -138,6 +138,7 @@ const ScrollingSubtitle: React.FC<ScrollingSubtitleProps> = ({ srtContent }) => 
         overflow: "hidden",
         maskImage: "linear-gradient(to bottom, transparent 0%, black 5%, black 95%, transparent 100%)",
         WebkitMaskImage: "linear-gradient(to bottom, transparent 0%, black 5%, black 95%, transparent 100%)",
+        fontFamily: '"PingFang SC", "PingFangSC-Regular", "Microsoft YaHei", sans-serif',
       }}
     >
       <div
@@ -225,7 +226,7 @@ const ScrollingSubtitle: React.FC<ScrollingSubtitleProps> = ({ srtContent }) => 
 };
 
 export const AudiobookSubtitle: React.FC<AudiobookProps> = ({
-  audioPath = staticFile("audio.wav"),
+  audioPath = staticFile("example.wav"),
   srtContent = "",
   title = "有声书"
 }) => {
@@ -256,6 +257,7 @@ export const AudiobookSubtitle: React.FC<AudiobookProps> = ({
             color: "#64748b",
             fontWeight: 300,
             letterSpacing: "0.1em",
+            fontFamily: '"PingFang SC", "PingFangSC-Regular", "Microsoft YaHei", sans-serif',
           }}
         >
           正在加载字幕...
@@ -323,6 +325,7 @@ export const AudiobookSubtitle: React.FC<AudiobookProps> = ({
             color: "#64748b",
             letterSpacing: "0.15em",
             opacity: 0.6,
+            fontFamily: '"PingFang SC", "PingFangSC-Regular", "Microsoft YaHei", sans-serif',
           }}
         >
           {title}

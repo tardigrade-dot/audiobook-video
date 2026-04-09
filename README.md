@@ -29,8 +29,8 @@ npm install
 
 ```
 public/
-├── audio.wav      # 音频文件
-└── content.srt    # SRT 字幕文件
+├── example.wav      # 音频文件
+└── example.srt    # SRT 字幕文件
 ```
 
 ### 1. 预览（开发模式）
@@ -52,7 +52,7 @@ npm run dev
 node render-single.js <wav文件> <srt文件> [输出名称]
 
 # 示例
-node render-single.js audio.wav subtitles.srt test-video
+node render-single.js example.wav subtitles.srt test-video
 ```
 
 这会在 `out/` 目录生成 `test-video.mp4` 文件。
@@ -92,8 +92,8 @@ npx remotion render Audiobook out/video.mp4
 │   ├── Root.tsx                  # Remotion 入口（从 public 读取文件）
 │   └── srtData.ts                # SRT/TXT 解析器
 ├── public/
-│   ├── audio.wav                 # 当前渲染使用的音频
-│   └── content.srt               # 当前渲染使用的字幕
+│   ├── example.wav                 # 当前渲染使用的音频
+│   └── example.srt               # 当前渲染使用的字幕
 ├── out/                          # 输出目录
 ├── render-single.js              # 单文件渲染脚本
 ├── render-all.js                 # 批量渲染脚本

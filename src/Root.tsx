@@ -1,17 +1,29 @@
 import "./index.css";
-import { Composition, staticFile, useVideoConfig, getInputProps } from "remotion";
+import { Composition, staticFile, getInputProps } from "remotion";
 import { AudiobookSubtitle } from "./AudiobookSubtitle";
 import { useEffect, useState } from "react";
 
 // Component to load SRT file at runtime
 const AudiobookWithSRT: React.FC = () => {
   const [srtContent, setSrtContent] = useState("");
-  const { title = "有声书" } = getInputProps() as { title?: string };
+  const inputProps = getInputProps() as {
+    title?: string;
+    audioPath?: string;
+    srtContent?: string;
+    srtPath?: string;
+  };
 
+  const { title = "有声书" } = inputProps;
+  const { audioPath: propsAudioPath, srtContent: propsSrtContent, srtPath: propsSrtPath } = inputProps;
+
+  // Use srtContent from props if provided, otherwise fetch from srtPath or default
   useEffect(() => {
-    // Use staticFile to get the correct URL for the SRT file
-    const srtPath = staticFile("content.srt");
-    
+    if (propsSrtContent) {
+      setSrtContent(propsSrtContent);
+      return;
+    }
+
+    const srtPath = propsSrtPath || staticFile("example.srt");
     fetch(srtPath)
       .then((res) => {
         if (!res.ok) {
@@ -26,11 +38,13 @@ const AudiobookWithSRT: React.FC = () => {
       .catch((err) => {
         console.error("❌ Error loading SRT:", err);
       });
-  }, []);
+  }, [propsSrtContent, propsSrtPath]);
+
+  const audioPath = propsAudioPath || staticFile("example.wav");
 
   return (
     <AudiobookSubtitle
-      audioPath={staticFile("audio.wav")}
+      audioPath={audioPath}
       srtContent={srtContent}
       title={title}
     />
