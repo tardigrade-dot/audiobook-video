@@ -22,6 +22,10 @@ for (let i = 0; i < args.length; i++) {
     i++;
   } else if (!wavFile) {
     wavFile = args[i];
+    // Auto-add .wav extension if not present and file doesn't exist
+    if (!fs.existsSync(wavFile) && !path.extname(wavFile)) {
+      wavFile = wavFile + '.wav';
+    }
   } else if (!srtFile) {
     srtFile = args[i];
   } else if (!outputName) {
@@ -62,18 +66,23 @@ if (!fs.existsSync(srtFile)) {
 
 const projectDir = path.join(__dirname);
 const publicDir = path.join(projectDir, 'public');
-const outDir = path.join(projectDir, 'out');
 
-// Create output directory
+// Output directory defaults to the same directory as the WAV file
+const wavDir = path.dirname(path.resolve(wavFile));
+const outDir = outputName ? path.join(wavDir) : wavDir;
+
+// Create output directory if needed
 if (!fs.existsSync(outDir)) {
   fs.mkdirSync(outDir, { recursive: true });
 }
+
+const outputFile = path.join(outDir, `${outputName || 'output'}.mp4`);
 
 console.log('🎬 Rendering audiobook video');
 console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
 console.log(`   Audio: ${path.basename(wavFile)}`);
 console.log(`   Subs:  ${path.basename(srtFile)}`);
-console.log(`   Output: out/${outputName}.mp4`);
+console.log(`   Output: ${outputFile}`);
 
 // Copy files to public
 fs.copyFileSync(wavFile, path.join(publicDir, 'example.wav'));
@@ -103,9 +112,6 @@ const modifiedRoot = originalRoot.replace(
   `durationInFrames={${durationFrames}}`
 );
 fs.writeFileSync(rootFilePath, modifiedRoot);
-
-// Render
-const outputFile = path.join(outDir, `${outputName}.mp4`);
 
 try {
   console.log('');
