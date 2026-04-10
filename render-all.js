@@ -97,7 +97,7 @@ wavFiles.forEach((wavFile, index) => {
   console.log(`   Duration: ${duration.toFixed(1)}s (${durationFrames} frames @ ${fps}fps)`);
 
   const outputFile = path.join(outDir, `${baseName}.mp4`);
-
+  console.log(`   Output file: ${outputFile}`);
   // Skip if output already exists
   if (skipExisting && fs.existsSync(outputFile)) {
     console.log(`   ⏭️  Already exists, skipping`);
