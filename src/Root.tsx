@@ -23,7 +23,7 @@ const AudiobookWithSRT: React.FC = () => {
       return;
     }
 
-    const srtPath = propsSrtPath || staticFile("example.srt");
+    const srtPath = propsSrtPath ? staticFile(propsSrtPath) : staticFile("example.srt");
     fetch(srtPath)
       .then((res) => {
         if (!res.ok) {
@@ -40,7 +40,7 @@ const AudiobookWithSRT: React.FC = () => {
       });
   }, [propsSrtContent, propsSrtPath]);
 
-  const audioPath = propsAudioPath || staticFile("example.wav");
+  const audioPath = propsAudioPath ? staticFile(propsAudioPath) : staticFile("example.wav");
 
   return (
     <AudiobookSubtitle

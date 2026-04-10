@@ -84,9 +84,11 @@ console.log(`   Audio: ${path.basename(wavFile)}`);
 console.log(`   Subs:  ${path.basename(srtFile)}`);
 console.log(`   Output: ${outputFile}`);
 
-// Copy files to public
-fs.copyFileSync(wavFile, path.join(publicDir, 'example.wav'));
-fs.copyFileSync(srtFile, path.join(publicDir, 'example.srt'));
+// Copy files to public with unique names
+const tempWavName = `single-${Date.now()}.wav`;
+const tempSrtName = `single-${Date.now()}.srt`;
+fs.copyFileSync(wavFile, path.join(publicDir, tempWavName));
+fs.copyFileSync(srtFile, path.join(publicDir, tempSrtName));
 console.log('   ✅ Copied files to public/');
 
 // Get duration
@@ -104,25 +106,22 @@ try {
 const durationFrames = Math.floor(duration * fps);
 console.log(`   ⏱️  Duration: ${duration.toFixed(1)}s (${durationFrames} frames @ ${fps}fps)`);
 
-// Temporarily update Root.tsx with correct duration
-const rootFilePath = path.join(projectDir, 'src', 'Root.tsx');
-const originalRoot = fs.readFileSync(rootFilePath, 'utf-8');
-const modifiedRoot = originalRoot.replace(
-  /durationInFrames=\{13500\}/,
-  `durationInFrames={${durationFrames}}`
-);
-fs.writeFileSync(rootFilePath, modifiedRoot);
+const props = JSON.stringify({
+  title,
+  audioPath: tempWavName,
+  srtPath: tempSrtName
+});
 
 try {
   console.log('');
   console.log('   🎬 Rendering video...');
   console.log('');
-  
+
   execSync(
-    `npx remotion render Audiobook "${outputFile}" --codec h264 --fps ${fps} --concurrency 100% --x264-preset veryfast --jpeg-quality 80 --hardware-acceleration if-possible --props '${JSON.stringify({ title })}'`,
+    `npx remotion render Audiobook "${outputFile}" --codec h264 --fps ${fps} --duration-in-frames ${durationFrames} --concurrency 100% --x264-preset veryfast --jpeg-quality 80 --hardware-acceleration if-possible --props '${props}'`,
     { stdio: 'inherit', cwd: projectDir }
   );
-  
+
   if (fs.existsSync(outputFile)) {
     const stats = fs.statSync(outputFile);
     const sizeMB = (stats.size / 1024 / 1024).toFixed(1);
@@ -139,6 +138,13 @@ try {
   console.error('❌ Render failed');
   console.error(error.message);
 } finally {
-  // Restore original Root.tsx
-  fs.writeFileSync(rootFilePath, originalRoot);
+  // Cleanup temp files
+  try {
+    const tempWavPath = path.join(publicDir, tempWavName);
+    const tempSrtPath = path.join(publicDir, tempSrtName);
+    if (fs.existsSync(tempWavPath)) fs.unlinkSync(tempWavPath);
+    if (fs.existsSync(tempSrtPath)) fs.unlinkSync(tempSrtPath);
+  } catch (e) {
+    // ignore
+  }
 }
