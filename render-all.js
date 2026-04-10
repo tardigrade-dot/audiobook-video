@@ -15,12 +15,16 @@ const customFps = (() => {
   const idx = process.argv.indexOf('--fps');
   return idx !== -1 && process.argv[idx + 1] ? parseInt(process.argv[idx + 1], 10) : 10;
 })();
+const customTitle = (() => {
+  const idx = process.argv.indexOf('--title');
+  return idx !== -1 && process.argv[idx + 1] ? process.argv[idx + 1] : '有声书';
+})();
 const fps = customFps || 10;
 
 if (!inputDir) {
-  console.log(`Usage: node render-all.js <directory> [--fps 10]`);
+  console.log(`Usage: node render-all.js <directory> [--fps 10] [--title "My Title"]`);
   console.log('Example: node render-all.js /Users/larry/Downloads/audiobooks');
-  console.log('Example: node render-all.js /path/to/audiobooks --fps 5');
+  console.log('Example: node render-all.js /path/to/audiobooks --fps 5 --title "My Audiobook"');
   process.exit(1);
 }
 
@@ -115,7 +119,7 @@ wavFiles.forEach((wavFile, index) => {
     fs.writeFileSync(rootFilePath, modifiedRoot);
 
     execSync(
-      `npx remotion render Audiobook "${outputFile}" --codec h264 --fps ${fps} --concurrency 100% --x264-preset veryfast --jpeg-quality 80 --hardware-acceleration if-possible --props '${JSON.stringify({ title: baseName })}'`,
+      `npx remotion render Audiobook "${outputFile}" --codec h264 --fps ${fps} --concurrency 100% --x264-preset veryfast --jpeg-quality 80 --hardware-acceleration if-possible --props '${JSON.stringify({ title: customTitle })}'`,
       { stdio: 'inherit', cwd: projectDir }
     );
 
