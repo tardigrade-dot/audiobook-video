@@ -11,9 +11,10 @@ const AudiobookWithSRT: React.FC = () => {
     audioPath?: string;
     srtContent?: string;
     srtPath?: string;
+    duration?: number;
   };
 
-  const { title = "有声书" } = inputProps;
+  const { title = "有声书", duration = 460 } = inputProps;
   const { audioPath: propsAudioPath, srtContent: propsSrtContent, srtPath: propsSrtPath } = inputProps;
 
   // Use srtContent from props if provided, otherwise fetch from srtPath or default
@@ -47,6 +48,7 @@ const AudiobookWithSRT: React.FC = () => {
       audioPath={audioPath}
       srtContent={srtContent}
       title={title}
+      duration={duration}
     />
   );
 };

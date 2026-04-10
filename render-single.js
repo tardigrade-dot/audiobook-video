@@ -109,8 +109,18 @@ console.log(`   ⏱️  Duration: ${duration.toFixed(1)}s (${durationFrames} fra
 const props = JSON.stringify({
   title,
   audioPath: tempWavName,
-  srtPath: tempSrtName
+  srtPath: tempSrtName,
+  duration: duration
 });
+
+// Temporarily update Root.tsx with correct duration
+const rootFilePath = path.join(projectDir, 'src', 'Root.tsx');
+const originalRoot = fs.readFileSync(rootFilePath, 'utf-8');
+const modifiedRoot = originalRoot.replace(
+  /durationInFrames=\{13500\}/,
+  `durationInFrames={${durationFrames}}`
+);
+fs.writeFileSync(rootFilePath, modifiedRoot);
 
 try {
   console.log('');
@@ -118,7 +128,7 @@ try {
   console.log('');
 
   execSync(
-    `npx remotion render Audiobook "${outputFile}" --codec h264 --fps ${fps} --duration-in-frames ${durationFrames} --concurrency 100% --x264-preset veryfast --jpeg-quality 80 --hardware-acceleration if-possible --props '${props}'`,
+    `npx remotion render Audiobook "${outputFile}" --codec h264 --fps ${fps} --concurrency 100% --x264-preset veryfast --jpeg-quality 80 --hardware-acceleration if-possible --props '${props}'`,
     { stdio: 'inherit', cwd: projectDir }
   );
 
@@ -138,6 +148,9 @@ try {
   console.error('❌ Render failed');
   console.error(error.message);
 } finally {
+  // Restore Root.tsx
+  fs.writeFileSync(rootFilePath, originalRoot);
+
   // Cleanup temp files
   try {
     const tempWavPath = path.join(publicDir, tempWavName);
