@@ -103,7 +103,7 @@ try {
   console.log('   ⚠️  Could not get duration, using default (460s)');
 }
 
-const durationFrames = Math.floor(duration * fps);
+const durationFrames = Math.ceil(duration * fps);
 console.log(`   ⏱️  Duration: ${duration.toFixed(1)}s (${durationFrames} frames @ ${fps}fps)`);
 
 const props = JSON.stringify({

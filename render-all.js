@@ -19,12 +19,14 @@ const customTitle = (() => {
   const idx = process.argv.indexOf('--title');
   return idx !== -1 && process.argv[idx + 1] ? process.argv[idx + 1] : '有声书';
 })();
+const skipExisting = process.argv.includes('--skip-existing');
 const fps = customFps || 10;
 
 if (!inputDir) {
-  console.log(`Usage: node render-all.js <directory> [--fps 10] [--title "My Title"]`);
+  console.log(`Usage: node render-all.js <directory> [--fps 10] [--title "My Title"] [--skip-existing]`);
   console.log('Example: node render-all.js /Users/larry/Downloads/audiobooks');
   console.log('Example: node render-all.js /path/to/audiobooks --fps 5 --title "My Audiobook"');
+  console.log('Example: node render-all.js /path/to/audiobooks --skip-existing');
   process.exit(1);
 }
 
@@ -91,11 +93,18 @@ wavFiles.forEach((wavFile, index) => {
     console.log('⚠️  Could not get duration, using default');
   }
 
-  const durationFrames = Math.floor(duration * fps);
+  const durationFrames = Math.ceil(duration * fps);
   console.log(`   Duration: ${duration.toFixed(1)}s (${durationFrames} frames @ ${fps}fps)`);
 
-  // Render
   const outputFile = path.join(outDir, `${baseName}.mp4`);
+
+  // Skip if output already exists
+  if (skipExisting && fs.existsSync(outputFile)) {
+    console.log(`   ⏭️  Already exists, skipping`);
+    successCount++;
+    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+    return;
+  }
 
   try {
     console.log('   🎬 Rendering...');
