@@ -42,12 +42,12 @@ const SubtitleWord: React.FC<SubtitleWordProps> = ({ word, start, end, fps }) =>
         margin: "0 4px",
         fontSize: isHighlighted ? "48px" : "40px",
         fontWeight: isHighlighted ? "800" : "600",
-        color: isHighlighted ? "#ffffff" : "#e2e8f0",
-        textShadow: isHighlighted 
-          ? "0 0 30px rgba(59, 130, 246, 0.8), 0 0 60px rgba(59, 130, 246, 0.4)" 
+        color: isHighlighted ? "#fef3c7" : "#94a3b8",
+        textShadow: isHighlighted
+          ? "0 0 20px rgba(245, 158, 11, 0.5), 0 2px 10px rgba(0, 0, 0, 0.3)"
           : "0 2px 10px rgba(0, 0, 0, 0.5)",
-        background: isHighlighted 
-          ? "linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%)" 
+        background: isHighlighted
+          ? "linear-gradient(135deg, #f59e0b 0%, #d97706 100%)"
           : "transparent",
         borderRadius: "12px",
         lineHeight: "1.6",

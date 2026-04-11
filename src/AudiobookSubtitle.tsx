@@ -162,21 +162,21 @@ const ScrollingSubtitle: React.FC<ScrollingSubtitleProps> = ({ srtContent }) => 
           // Visual styles
           const visualFontSize = isCurrent ? 36 : baseFontSize;
 
-          let color = "#e8e8e8";
+          let color = "#00394d";
           let fontWeight = 400;
           let textShadow = "0 1px 3px rgba(0, 0, 0, 0.2)";
           let itemOpacity = isFuture ? 0.65 : 0.75;
 
           if (isCurrent) {
-            color = "#ffffff";
+            color = "#55aa8b";
             fontWeight = 600;
             itemOpacity = 1;
             textShadow =
-              "0 0 15px rgba(255, 255, 255, 0.4), 0 0 30px rgba(96, 165, 250, 0.2), 0 2px 8px rgba(0, 0, 0, 0.3)";
+              "0 0 12px rgba(251, 191, 36, 0.3), 0 2px 6px rgba(0, 0, 0, 0.3)";
           } else if (isPast) {
-            color = "#c0c0c0";
+            color = "#52525b";
           } else {
-            color = "#a8a8a8";
+            color = "#52525b";
           }
 
           // Fade in/out animation for the current subtitle
