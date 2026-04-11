@@ -10,7 +10,7 @@ const path = require('path');
 const { execSync } = require('child_process');
 
 // Parse arguments
-let wavFile, srtFile, outputName, title, customFps;
+let wavFile, srtFile, outputName, title, customFps, customDuration;
 const args = process.argv.slice(2);
 
 for (let i = 0; i < args.length; i++) {
@@ -19,6 +19,9 @@ for (let i = 0; i < args.length; i++) {
     i++;
   } else if (args[i] === '--fps' && args[i+1]) {
     customFps = parseInt(args[i+1], 10);
+    i++;
+  } else if (args[i] === '--duration' && args[i+1]) {
+    customDuration = parseInt(args[i+1], 10);
     i++;
   } else if (!wavFile) {
     wavFile = args[i];
@@ -38,13 +41,14 @@ title = title || '有声书';
 const fps = customFps || 10; // Default 10fps for audiobook (static content)
 
 if (!wavFile) {
-  console.log('Usage: node render-single.js <wav-file> [srt-file] [output-name] [--title "My Title"] [--fps 10]');
+  console.log('Usage: node render-single.js <wav-file> [srt-file] [output-name] [--title "My Title"] [--fps 10] [--duration 300]');
   console.log('');
   console.log('Examples:');
   console.log('  node render-single.js example.wav subtitles.srt');
   console.log('  node render-single.js example.wav (auto-detects audio.srt)');
   console.log('  node render-single.js example.wav subtitles.srt my-video --title "My Journey"');
   console.log('  node render-single.js example.wav --fps 5');
+  console.log('  node render-single.js example.wav --duration 300  (render first 5 minutes)');
   process.exit(1);
 }
 
@@ -101,6 +105,12 @@ try {
   duration = parseFloat(durationStr) || 460;
 } catch (e) {
   console.log('   ⚠️  Could not get duration, using default (460s)');
+}
+
+// Apply custom duration limit if specified
+if (customDuration && customDuration < duration) {
+  duration = customDuration;
+  console.log(`   ⏱️  Duration limited to: ${duration}s (--duration)`);
 }
 
 const durationFrames = Math.ceil(duration * fps);

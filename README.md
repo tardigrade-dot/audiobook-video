@@ -49,13 +49,30 @@ npm run dev
 
 ```bash
 # 语法
-node render-single.js <wav文件> <srt文件> [输出名称]
+node render-single.js <wav文件> [srt文件] [输出名称] [--title "标题"] [--fps 10] [--duration 300]
 
-# 示例
+# 示例：完整渲染
 node render-single.js example.wav subtitles.srt test-video
+
+# 示例：只渲染前 5 分钟（300 秒），快速预览效果
+node render-single.js example.wav subtitles.srt preview --duration 300
+
+# 示例：自定义标题和帧率
+node render-single.js example.wav --title "我的旅程" --fps 5 --duration 120
 ```
 
-这会在 `out/` 目录生成 `test-video.mp4` 文件。
+**参数说明：**
+
+| 参数 | 必填 | 说明 | 示例 |
+|------|------|------|------|
+| `<wav文件>` | ✅ | 音频文件路径（.wav） | `example.wav` |
+| `[srt文件]` | ❌ | 字幕文件路径（.srt），不传则自动查找同名 `.srt` | `subtitles.srt` |
+| `[输出名称]` | ❌ | 输出文件名，默认 `output` | `my-video` |
+| `--title` | ❌ | 视频标题，默认 `有声书` | `--title "我的旅程"` |
+| `--fps` | ❌ | 帧率，默认 `10`（有声书静态内容） | `--fps 5` |
+| `--duration` | ❌ | **限制渲染时长（秒）**，用于快速预览 | `--duration 300`（5 分钟） |
+
+输出文件会生成在 **音频文件所在目录**，格式为 `<输出名称>.mp4`。
 
 ### 3. 批量渲染（生产用）
 
