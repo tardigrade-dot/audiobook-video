@@ -117,33 +117,21 @@ function cleanup() {
 }
 
 try {
-  // Temporarily update Root.tsx with correct duration and file names
-  const rootFilePath = path.join(projectDir, 'src', 'Root.tsx');
-  const originalRoot = fs.readFileSync(rootFilePath, 'utf-8');
-  const modifiedRoot = originalRoot
-    .replace(
-      /durationInFrames=\{13500\}/,
-      `durationInFrames={${durationFrames}}`
-    )
-    .replace(
-      /staticFile\("audio\.wav"\)/,
-      `staticFile("${publicWavName}")`
-    )
-    .replace(
-      /staticFile\("content\.srt"\)/,
-      `staticFile("${publicSrtName}")`
-    );
-  fs.writeFileSync(rootFilePath, modifiedRoot);
-
-  // Render
+  // Render - pass all config through props (calculateMetadata handles duration)
   const outputFile = path.join(outDir, `${outputName}.mp4`);
+  const props = JSON.stringify({
+    title,
+    audioPath: publicWavName,
+    srtPath: publicSrtName,
+    durationFrames: durationFrames
+  });
 
   console.log('');
   console.log('   🎬 Rendering video...');
   console.log('');
 
   execSync(
-    `npx remotion render Audiobook "${outputFile}" --codec h264 --fps ${fps} --concurrency 100% --x264-preset veryfast --jpeg-quality 80 --hardware-acceleration if-possible --props '${JSON.stringify({ title })}'`,
+    `npx remotion render Audiobook "${outputFile}" --codec h264 --fps ${fps} --concurrency 100% --x264-preset veryfast --jpeg-quality 80 --hardware-acceleration if-possible --props '${props}'`,
     { stdio: 'inherit', cwd: projectDir }
   );
 
@@ -164,11 +152,6 @@ try {
   console.error(error.message);
   process.exitCode = 1;
 } finally {
-  // Restore original Root.tsx
-  const rootFilePath = path.join(projectDir, 'src', 'Root.tsx');
-  const originalRoot = fs.readFileSync(rootFilePath, 'utf-8');
-  fs.writeFileSync(rootFilePath, originalRoot);
-
   // Clean up temporary files
   cleanup();
 }

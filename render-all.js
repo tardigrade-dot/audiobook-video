@@ -109,30 +109,18 @@ wavFiles.forEach((wavFile, index) => {
   try {
     console.log('   🎬 Rendering...');
 
-    // Temporarily update Root.tsx with correct duration (audio/srt paths go through props)
-    const rootFilePath = path.join(projectDir, 'src', 'Root.tsx');
-    const originalRoot = fs.readFileSync(rootFilePath, 'utf-8');
-    const modifiedRoot = originalRoot.replace(
-      /durationInFrames=\{13500\}/,
-      `durationInFrames={${durationFrames}}`
-    );
-    fs.writeFileSync(rootFilePath, modifiedRoot);
-
-    // Pass file paths through props
+    // Pass file paths through props (durationFrames is used by calculateMetadata)
     const props = JSON.stringify({
       title: customTitle,
       audioPath: tempWavName,
       srtPath: tempSrtName,
-      duration: duration
+      durationFrames: durationFrames
     });
 
     execSync(
       `npx remotion render Audiobook "${outputFile}" --codec h264 --fps ${fps} --concurrency 100% --x264-preset veryfast --jpeg-quality 80 --hardware-acceleration if-possible --props '${props}'`,
       { stdio: 'inherit', cwd: projectDir }
     );
-
-    // Restore Root.tsx
-    fs.writeFileSync(rootFilePath, originalRoot);
 
     if (fs.existsSync(outputFile)) {
       const stats = fs.statSync(outputFile);
@@ -143,15 +131,6 @@ wavFiles.forEach((wavFile, index) => {
   } catch (error) {
     console.error(`❌ Failed: ${baseName}`);
     failCount++;
-
-    // Restore Root.tsx even on failure
-    const rootFilePath = path.join(projectDir, 'src', 'Root.tsx');
-    try {
-      const originalRootContent = fs.readFileSync(rootFilePath, 'utf-8');
-      fs.writeFileSync(rootFilePath, originalRootContent);
-    } catch (e) {
-      // ignore
-    }
   }
 
   console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');

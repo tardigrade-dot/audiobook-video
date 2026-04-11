@@ -1,20 +1,32 @@
 import "./index.css";
-import { Composition, staticFile, getInputProps } from "remotion";
+import { Composition, staticFile, getInputProps, CalculateMetadataFunction } from "remotion";
 import { AudiobookSubtitle } from "./AudiobookSubtitle";
 import { useEffect, useState } from "react";
+
+interface InputProps {
+  title?: string;
+  audioPath?: string;
+  srtContent?: string;
+  srtPath?: string;
+  durationFrames?: number;
+  [key: string]: unknown;
+}
+
+// Dynamically calculate durationInFrames from props
+export const calculateMetadata: CalculateMetadataFunction<InputProps> = ({ props }) => {
+  const durationInFrames = props.durationFrames ?? 13500;
+  return {
+    durationInFrames,
+    props,
+  };
+};
 
 // Component to load SRT file at runtime
 const AudiobookWithSRT: React.FC = () => {
   const [srtContent, setSrtContent] = useState("");
-  const inputProps = getInputProps() as {
-    title?: string;
-    audioPath?: string;
-    srtContent?: string;
-    srtPath?: string;
-    duration?: number;
-  };
+  const inputProps = getInputProps() as InputProps;
 
-  const { title = "有声书", duration = 460 } = inputProps;
+  const { title = "有声书" } = inputProps;
   const { audioPath: propsAudioPath, srtContent: propsSrtContent, srtPath: propsSrtPath } = inputProps;
 
   // Use srtContent from props if provided, otherwise fetch from srtPath or default
@@ -48,7 +60,6 @@ const AudiobookWithSRT: React.FC = () => {
       audioPath={audioPath}
       srtContent={srtContent}
       title={title}
-      duration={duration}
     />
   );
 };
@@ -59,7 +70,8 @@ export const RemotionRoot: React.FC = () => {
       <Composition
         id="Audiobook"
         component={AudiobookWithSRT}
-        durationInFrames={13500} // Will be overridden by render scripts
+        calculateMetadata={calculateMetadata}
+        durationInFrames={13500} // Default, overridden by calculateMetadata
         fps={30}
         width={1920}
         height={1080}

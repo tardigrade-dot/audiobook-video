@@ -229,11 +229,11 @@ export const AudiobookSubtitle: React.FC<AudiobookProps> = ({
   audioPath = staticFile("example.wav"),
   srtContent = "",
   title = "有声书",
-  duration = 460
 }) => {
-  const { fps } = useVideoConfig();
+  const { fps, durationInFrames } = useVideoConfig();
   const frame = useCurrentFrame();
   const currentTime = frame / fps;
+  const totalDuration = durationInFrames / fps;
 
   // Background animation
   const bgOffset1 = interpolate(Math.sin(currentTime * 0.3), [-1, 1], [-50, 50]);
@@ -352,7 +352,7 @@ export const AudiobookSubtitle: React.FC<AudiobookProps> = ({
       >
         <div
           style={{
-            width: `${Math.min((currentTime / duration) * 100, 100)}%`,
+            width: `${Math.min((currentTime / totalDuration) * 100, 100)}%`,
             height: "100%",
             background: "linear-gradient(90deg, #60a5fa 0%, #8b5cf6 50%, #ec4899 100%)",
             borderRadius: "2px",

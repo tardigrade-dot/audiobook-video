@@ -120,17 +120,8 @@ const props = JSON.stringify({
   title,
   audioPath: tempWavName,
   srtPath: tempSrtName,
-  duration: duration
+  durationFrames: durationFrames
 });
-
-// Temporarily update Root.tsx with correct duration
-const rootFilePath = path.join(projectDir, 'src', 'Root.tsx');
-const originalRoot = fs.readFileSync(rootFilePath, 'utf-8');
-const modifiedRoot = originalRoot.replace(
-  /durationInFrames=\{13500\}/,
-  `durationInFrames={${durationFrames}}`
-);
-fs.writeFileSync(rootFilePath, modifiedRoot);
 
 try {
   console.log('');
@@ -158,9 +149,6 @@ try {
   console.error('❌ Render failed');
   console.error(error.message);
 } finally {
-  // Restore Root.tsx
-  fs.writeFileSync(rootFilePath, originalRoot);
-
   // Cleanup temp files
   try {
     const tempWavPath = path.join(publicDir, tempWavName);
