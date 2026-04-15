@@ -23,7 +23,7 @@ const ScrollingSubtitle: React.FC<ScrollingSubtitleProps> = ({ srtContent, hasTO
   // Layout constants - adjust left margin when TOC is present
   const containerHeight = 1080 - 120; // top 60 + bottom 60
   const tocWidth = hasTOC ? 400 : 0;
-  const leftMargin = 100 + tocWidth;
+  const leftMargin = hasTOC ? 0 + tocWidth : 100;
   const containerWidth = 1920 - leftMargin - 100; // left margin + right 100
   const fontSize = 32;
   const lineHeight = 1.6;
