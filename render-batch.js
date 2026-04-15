@@ -12,7 +12,7 @@ const path = require('path');
 const { execSync } = require('child_process');
 
 // Parse arguments
-let wavFile, srtFile, outputName, title, customFps;
+let wavFile, srtFile, tocFile, outputName, title, customFps;
 const args = process.argv.slice(2);
 
 for (let i = 0; i < args.length; i++) {
@@ -21,6 +21,9 @@ for (let i = 0; i < args.length; i++) {
     i++;
   } else if (args[i] === '--fps' && args[i + 1]) {
     customFps = parseInt(args[i + 1], 10);
+    i++;
+  } else if (args[i] === '--toc' && args[i + 1]) {
+    tocFile = args[i + 1];
     i++;
   } else if (!wavFile) {
     wavFile = args[i];
@@ -36,13 +39,14 @@ title = title || '有声书';
 const fps = customFps || 10; // Default 10fps for audiobook (static content)
 
 if (!wavFile) {
-  console.log('Usage: node render-batch.js <wav-file> [srt-file] [output-name] [--title "My Title"] [--fps 10]');
+  console.log('Usage: node render-batch.js <wav-file> [srt-file] [output-name] [--title "My Title"] [--fps 10] [--toc toc-file.srt]');
   console.log('');
   console.log('Examples:');
   console.log('  node render-batch.js example.wav subtitles.srt');
   console.log('  node render-batch.js example.wav (auto-detects audio.srt)');
   console.log('  node render-batch.js example.wav subtitles.srt my-video --title "My Journey"');
   console.log('  node render-batch.js example.wav --fps 5  (slower but higher quality)');
+  console.log('  node render-batch.js example.wav subtitles.srt --toc example-toc.srt  (with TOC sidebar)');
   process.exit(1);
 }
 
@@ -52,9 +56,20 @@ if (!srtFile) {
   srtFile = path.join(wavPath.dir, wavPath.name + '.srt');
 }
 
+// Auto-detect TOC file if not provided (same directory, same name with -toc suffix)
+if (!tocFile) {
+  const srtPath = path.parse(srtFile);
+  const autoTocFile = path.join(srtPath.dir, srtPath.name + '-toc.srt');
+  if (fs.existsSync(autoTocFile)) {
+    tocFile = autoTocFile;
+    console.log(`   📑 Auto-detected TOC: ${path.basename(tocFile)}`);
+  }
+}
+
 // Resolve to absolute paths
 wavFile = path.resolve(wavFile);
 srtFile = path.resolve(srtFile);
+if (tocFile) tocFile = path.resolve(tocFile);
 
 if (!fs.existsSync(wavFile)) {
   console.error(`❌ Audio file not found: ${wavFile}`);
@@ -78,8 +93,10 @@ if (!fs.existsSync(outDir)) {
 // Use unique names to avoid conflicts
 const publicWavName = `batch-audio-${Date.now()}.wav`;
 const publicSrtName = `batch-subs-${Date.now()}.srt`;
+const publicTocName = tocFile ? `batch-toc-${Date.now()}.srt` : null;
 const publicWavPath = path.join(publicDir, publicWavName);
 const publicSrtPath = path.join(publicDir, publicSrtName);
+const publicTocPath = tocFile ? path.join(publicDir, publicTocName) : null;
 
 console.log('🎬 Rendering audiobook video');
 console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
@@ -105,12 +122,20 @@ console.log(`   ⏱️  Duration: ${duration.toFixed(1)}s (${durationFrames} fra
 // Copy files to public temporarily
 fs.copyFileSync(wavFile, publicWavPath);
 fs.copyFileSync(srtFile, publicSrtPath);
+if (tocFile && publicTocPath) {
+  if (!fs.existsSync(tocFile)) {
+    console.error(`❌ TOC file not found: ${tocFile}`);
+    process.exit(1);
+  }
+  fs.copyFileSync(tocFile, publicTocPath);
+}
 
 // Cleanup function
 function cleanup() {
   try {
     if (fs.existsSync(publicWavPath)) fs.unlinkSync(publicWavPath);
     if (fs.existsSync(publicSrtPath)) fs.unlinkSync(publicSrtPath);
+    if (publicTocPath && fs.existsSync(publicTocPath)) fs.unlinkSync(publicTocPath);
   } catch (e) {
     // Ignore cleanup errors
   }
@@ -123,6 +148,7 @@ try {
     title,
     audioPath: publicWavName,
     srtPath: publicSrtName,
+    tocPath: publicTocName || undefined,
     durationFrames: durationFrames
   });
 

@@ -10,7 +10,7 @@ const path = require('path');
 const { execSync } = require('child_process');
 
 // Parse arguments
-let wavFile, srtFile, outputName, title, customFps, customDuration;
+let wavFile, srtFile, tocFile, outputName, title, customFps, customDuration;
 const args = process.argv.slice(2);
 
 for (let i = 0; i < args.length; i++) {
@@ -22,6 +22,9 @@ for (let i = 0; i < args.length; i++) {
     i++;
   } else if (args[i] === '--duration' && args[i+1]) {
     customDuration = parseInt(args[i+1], 10);
+    i++;
+  } else if (args[i] === '--toc' && args[i+1]) {
+    tocFile = args[i+1];
     i++;
   } else if (!wavFile) {
     wavFile = args[i];
@@ -41,7 +44,7 @@ title = title || '有声书';
 const fps = customFps || 10; // Default 10fps for audiobook (static content)
 
 if (!wavFile) {
-  console.log('Usage: node render-single.js <wav-file> [srt-file] [output-name] [--title "My Title"] [--fps 10] [--duration 300]');
+  console.log('Usage: node render-single.js <wav-file> [srt-file] [output-name] [--title "My Title"] [--fps 10] [--duration 300] [--toc toc-file.srt]');
   console.log('');
   console.log('Examples:');
   console.log('  node render-single.js example.wav subtitles.srt');
@@ -49,6 +52,7 @@ if (!wavFile) {
   console.log('  node render-single.js example.wav subtitles.srt my-video --title "My Journey"');
   console.log('  node render-single.js example.wav --fps 5');
   console.log('  node render-single.js example.wav --duration 300  (render first 5 minutes)');
+  console.log('  node render-single.js example.wav subtitles.srt --toc example-toc.srt  (with TOC sidebar)');
   process.exit(1);
 }
 
@@ -56,6 +60,16 @@ if (!wavFile) {
 if (!srtFile) {
   const wavPath = path.parse(wavFile);
   srtFile = path.join(wavPath.dir, wavPath.name + '.srt');
+}
+
+// Auto-detect TOC file if not provided (same directory, same name with -toc suffix)
+if (!tocFile) {
+  const srtPath = path.parse(srtFile);
+  const autoTocFile = path.join(srtPath.dir, srtPath.name + '-toc.srt');
+  if (fs.existsSync(autoTocFile)) {
+    tocFile = autoTocFile;
+    console.log(`   📑 Auto-detected TOC: ${path.basename(tocFile)}`);
+  }
 }
 
 if (!fs.existsSync(wavFile)) {
@@ -91,8 +105,16 @@ console.log(`   Output: ${outputFile}`);
 // Copy files to public with unique names
 const tempWavName = `single-${Date.now()}.wav`;
 const tempSrtName = `single-${Date.now()}.srt`;
+const tempTocName = tocFile ? `single-${Date.now()}-toc.srt` : null;
 fs.copyFileSync(wavFile, path.join(publicDir, tempWavName));
 fs.copyFileSync(srtFile, path.join(publicDir, tempSrtName));
+if (tocFile && tempTocName) {
+  if (!fs.existsSync(tocFile)) {
+    console.error(`❌ TOC file not found: ${tocFile}`);
+    process.exit(1);
+  }
+  fs.copyFileSync(tocFile, path.join(publicDir, tempTocName));
+}
 console.log('   ✅ Copied files to public/');
 
 // Get duration
@@ -120,6 +142,7 @@ const props = JSON.stringify({
   title,
   audioPath: tempWavName,
   srtPath: tempSrtName,
+  tocPath: tempTocName || undefined,
   durationFrames: durationFrames
 });
 
@@ -155,6 +178,10 @@ try {
     const tempSrtPath = path.join(publicDir, tempSrtName);
     if (fs.existsSync(tempWavPath)) fs.unlinkSync(tempWavPath);
     if (fs.existsSync(tempSrtPath)) fs.unlinkSync(tempSrtPath);
+    if (tempTocName) {
+      const tempTocPath = path.join(publicDir, tempTocName);
+      if (fs.existsSync(tempTocPath)) fs.unlinkSync(tempTocPath);
+    }
   } catch (e) {
     // ignore
   }

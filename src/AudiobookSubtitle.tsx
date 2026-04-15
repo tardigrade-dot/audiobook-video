@@ -1,25 +1,30 @@
 import { useCurrentFrame, useVideoConfig, Audio, interpolate, staticFile } from "remotion";
 import { parseSRT } from "./srtData";
+import { TOCSidebar } from "./TOCSidebar";
 
 interface AudiobookProps {
   audioPath?: string;
   srtContent?: string;
+  tocContent?: string;
   title?: string;
 }
 
 interface ScrollingSubtitleProps {
   srtContent: string;
+  hasTOC: boolean;
 }
 
-const ScrollingSubtitle: React.FC<ScrollingSubtitleProps> = ({ srtContent }) => {
+const ScrollingSubtitle: React.FC<ScrollingSubtitleProps> = ({ srtContent, hasTOC }) => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
   const currentTime = frame / fps;
   const subtitles = parseSRT(srtContent);
 
-  // Layout constants
+  // Layout constants - adjust left margin when TOC is present
   const containerHeight = 1080 - 120; // top 60 + bottom 60
-  const containerWidth = 1920 - 200; // left 100 + right 100
+  const tocWidth = hasTOC ? 400 : 0;
+  const leftMargin = 100 + tocWidth;
+  const containerWidth = 1920 - leftMargin - 100; // left margin + right 100
   const fontSize = 32;
   const lineHeight = 1.6;
   const paddingY = 0; // Removed extra padding to unify internal and external gaps
@@ -133,7 +138,7 @@ const ScrollingSubtitle: React.FC<ScrollingSubtitleProps> = ({ srtContent }) => 
         position: "absolute",
         top: "60px",
         bottom: "60px",
-        left: "100px",
+        left: `${leftMargin}px`,
         right: "100px",
         overflow: "hidden",
         maskImage: "linear-gradient(to bottom, transparent 0%, black 5%, black 95%, transparent 100%)",
@@ -228,12 +233,15 @@ const ScrollingSubtitle: React.FC<ScrollingSubtitleProps> = ({ srtContent }) => 
 export const AudiobookSubtitle: React.FC<AudiobookProps> = ({
   audioPath = staticFile("example.wav"),
   srtContent = "",
+  tocContent = "",
   title = "有声书",
 }) => {
   const { fps, durationInFrames } = useVideoConfig();
   const frame = useCurrentFrame();
   const currentTime = frame / fps;
   const totalDuration = durationInFrames / fps;
+
+  const hasTOC = !!(tocContent && tocContent.length > 0);
 
   // Background animation
   const bgOffset1 = interpolate(Math.sin(currentTime * 0.3), [-1, 1], [-50, 50]);
@@ -308,12 +316,15 @@ export const AudiobookSubtitle: React.FC<AudiobookProps> = ({
         }}
       />
 
-      {/* Title area */}
+      {/* TOC Sidebar */}
+      {hasTOC && <TOCSidebar tocContent={tocContent} />}
+
+      {/* Title area - shift right when TOC is present */}
       <div
         style={{
           position: "absolute",
           top: "30px",
-          left: 0,
+          left: hasTOC ? "420px" : 0,
           right: 0,
           textAlign: "center",
           zIndex: 10,
@@ -334,7 +345,7 @@ export const AudiobookSubtitle: React.FC<AudiobookProps> = ({
       </div>
 
       {/* Scrolling subtitles */}
-      <ScrollingSubtitle srtContent={srtContent} />
+      <ScrollingSubtitle srtContent={srtContent} hasTOC={hasTOC} />
 
       {/* Progress bar */}
       <div

@@ -8,6 +8,7 @@ interface InputProps {
   audioPath?: string;
   srtContent?: string;
   srtPath?: string;
+  tocPath?: string;
   durationFrames?: number;
   [key: string]: unknown;
 }
@@ -24,10 +25,11 @@ export const calculateMetadata: CalculateMetadataFunction<InputProps> = ({ props
 // Component to load SRT file at runtime
 const AudiobookWithSRT: React.FC = () => {
   const [srtContent, setSrtContent] = useState("");
+  const [tocContent, setTocContent] = useState("");
   const inputProps = getInputProps() as InputProps;
 
   const { title = "有声书" } = inputProps;
-  const { audioPath: propsAudioPath, srtContent: propsSrtContent, srtPath: propsSrtPath } = inputProps;
+  const { audioPath: propsAudioPath, srtContent: propsSrtContent, srtPath: propsSrtPath, tocPath: propsTocPath } = inputProps;
 
   // Use srtContent from props if provided, otherwise fetch from srtPath or default
   useEffect(() => {
@@ -53,12 +55,34 @@ const AudiobookWithSRT: React.FC = () => {
       });
   }, [propsSrtContent, propsSrtPath]);
 
+  // Load TOC content if tocPath is provided
+  useEffect(() => {
+    if (!propsTocPath) return;
+
+    const tocPath = staticFile(propsTocPath);
+    fetch(tocPath)
+      .then((res) => {
+        if (!res.ok) {
+          throw new Error(`Failed to load TOC: ${res.status}`);
+        }
+        return res.text();
+      })
+      .then((text) => {
+        console.log('✅ Loaded TOC content, length:', text.length);
+        setTocContent(text);
+      })
+      .catch((err) => {
+        console.error("❌ Error loading TOC:", err);
+      });
+  }, [propsTocPath]);
+
   const audioPath = propsAudioPath ? staticFile(propsAudioPath) : staticFile("example.wav");
 
   return (
     <AudiobookSubtitle
       audioPath={audioPath}
       srtContent={srtContent}
+      tocContent={tocContent}
       title={title}
     />
   );

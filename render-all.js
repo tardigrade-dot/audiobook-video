@@ -20,13 +20,18 @@ const customTitle = (() => {
   return idx !== -1 && process.argv[idx + 1] ? process.argv[idx + 1] : '有声书';
 })();
 const skipExisting = process.argv.includes('--skip-existing');
+const tocDir = (() => {
+  const idx = process.argv.indexOf('--toc-dir');
+  return idx !== -1 && process.argv[idx + 1] ? process.argv[idx + 1] : null;
+})();
 const fps = customFps || 10;
 
 if (!inputDir) {
-  console.log(`Usage: node render-all.js <directory> [--fps 10] [--title "My Title"] [--skip-existing]`);
+  console.log(`Usage: node render-all.js <directory> [--fps 10] [--title "My Title"] [--skip-existing] [--toc-dir <toc-directory>]`);
   console.log('Example: node render-all.js /Users/larry/Downloads/audiobooks');
   console.log('Example: node render-all.js /path/to/audiobooks --fps 5 --title "My Audiobook"');
   console.log('Example: node render-all.js /path/to/audiobooks --skip-existing');
+  console.log('Example: node render-all.js /path/to/audiobooks --toc-dir /path/to/tocs  (with TOC sidebars)');
   process.exit(1);
 }
 
@@ -68,18 +73,40 @@ wavFiles.forEach((wavFile, index) => {
     return;
   }
 
-  console.log(`\n▶️  [${index + 1}/${wavFiles.length}] ${baseName}`);
+  // Look for matching TOC file (either in tocDir or inputDir)
+  let tocFile = null;
+  if (tocDir) {
+    // Look in specified toc directory
+    const possibleTocFile = path.join(tocDir, baseName + '-toc.srt');
+    if (fs.existsSync(possibleTocFile)) {
+      tocFile = possibleTocFile;
+    }
+  } else {
+    // Look in the same directory as the audio file
+    const possibleTocFile = path.join(inputDir, baseName + '-toc.srt');
+    if (fs.existsSync(possibleTocFile)) {
+      tocFile = possibleTocFile;
+    }
+  }
+
+  console.log(`\n▶️  [${index + 1}/${wavFiles.length}] ${baseName}${tocFile ? ' (with TOC)' : ''}`);
 
   // Use unique temp names to avoid conflicts
   const tempWavName = `batch-${Date.now()}-${index}.wav`;
   const tempSrtName = `batch-${Date.now()}-${index}.srt`;
+  const tempTocName = tocFile ? `batch-${Date.now()}-${index}-toc.srt` : null;
   const tempWavPath = path.join(publicDir, tempWavName);
   const tempSrtPath = path.join(publicDir, tempSrtName);
+  const tempTocPath = tocFile ? path.join(publicDir, tempTocName) : null;
 
   // Copy to public
   fs.copyFileSync(path.join(inputDir, wavFile), tempWavPath);
   fs.copyFileSync(srtFile, tempSrtPath);
+  if (tocFile && tempTocPath) {
+    fs.copyFileSync(tocFile, tempTocPath);
+  }
   tempFiles.push(tempWavPath, tempSrtPath);
+  if (tempTocPath) tempFiles.push(tempTocPath);
 
   // Get duration using ffprobe
   let duration = 460;
@@ -114,6 +141,7 @@ wavFiles.forEach((wavFile, index) => {
       title: customTitle,
       audioPath: tempWavName,
       srtPath: tempSrtName,
+      tocPath: tempTocName || undefined,
       durationFrames: durationFrames
     });
 
