@@ -121,7 +121,7 @@ export const TOCSidebar: React.FC<TOCSidebarProps> = ({ tocContent }) => {
   return (
     <div
       style={{
-        width: "400px",
+        width: "300px",
         height: "100%",
         position: "absolute",
         left: 0,

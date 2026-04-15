@@ -50,26 +50,42 @@ if (!wavFile) {
   process.exit(1);
 }
 
+// Resolve input file paths to absolute paths early for consistent logging
+wavFile = path.resolve(wavFile);
+
 // Auto-detect SRT file if not provided
+let srtAutoDetected = false;
 if (!srtFile) {
   const wavPath = path.parse(wavFile);
   srtFile = path.join(wavPath.dir, wavPath.name + '.srt');
+  srtAutoDetected = true;
 }
 
 // Auto-detect TOC file if not provided (same directory, same name with -toc suffix)
+let tocAutoDetected = false;
 if (!tocFile) {
   const srtPath = path.parse(srtFile);
   const autoTocFile = path.join(srtPath.dir, srtPath.name + '-toc.srt');
   if (fs.existsSync(autoTocFile)) {
     tocFile = autoTocFile;
-    console.log(`   📑 Auto-detected TOC: ${path.basename(tocFile)}`);
+    tocAutoDetected = true;
   }
 }
 
 // Resolve to absolute paths
-wavFile = path.resolve(wavFile);
 srtFile = path.resolve(srtFile);
 if (tocFile) tocFile = path.resolve(tocFile);
+
+// Print detailed file discovery logs
+console.log('📂 File Discovery:');
+console.log(`   Audio:    ${wavFile}`);
+console.log(`   Subtitle: ${srtFile}${srtAutoDetected ? ' (auto-detected from wav name)' : ''}`);
+if (tocFile) {
+  console.log(`   TOC:      ${tocFile}${tocAutoDetected ? ' (auto-detected from srt name)' : ''}`);
+} else {
+  console.log('   TOC:      (none found)');
+}
+console.log('');
 
 if (!fs.existsSync(wavFile)) {
   console.error(`❌ Audio file not found: ${wavFile}`);
@@ -102,6 +118,9 @@ console.log('🎬 Rendering audiobook video');
 console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
 console.log(`   Audio: ${path.basename(wavFile)}`);
 console.log(`   Subs:  ${path.basename(srtFile)}`);
+if (tocFile) {
+  console.log(`   TOC:   ${path.basename(tocFile)}`);
+}
 console.log(`   Output: out/${outputName}.mp4`);
 
 // Get duration
@@ -117,16 +136,25 @@ try {
 }
 
 const durationFrames = Math.floor(duration * fps);
-console.log(`   ⏱️  Duration: ${duration.toFixed(1)}s (${durationFrames} frames @ ${fps}fps)`);
+
+// Print all render parameters
+console.log('');
+console.log('⚙️  Render Parameters:');
+console.log(`   Title:          ${title}${!process.argv.includes('--title') ? ' (default)' : ''}`);
+console.log(`   FPS:            ${fps}${!process.argv.includes('--fps') ? ' (default)' : ''}`);
+console.log(`   Duration:       ${duration.toFixed(1)}s (${durationFrames} frames)`);
+console.log(`   Codec:          h264`);
+console.log(`   Preset:         veryfast`);
+console.log(`   Concurrency:    100%`);
+console.log(`   JPEG Quality:   80`);
+console.log(`   Hardware Accel: if-possible`);
+console.log(`   TOC Sidebar:    ${tocFile ? 'enabled' : 'disabled'}`);
+console.log('');
 
 // Copy files to public temporarily
 fs.copyFileSync(wavFile, publicWavPath);
 fs.copyFileSync(srtFile, publicSrtPath);
 if (tocFile && publicTocPath) {
-  if (!fs.existsSync(tocFile)) {
-    console.error(`❌ TOC file not found: ${tocFile}`);
-    process.exit(1);
-  }
   fs.copyFileSync(tocFile, publicTocPath);
 }
 
@@ -152,8 +180,15 @@ try {
     durationFrames: durationFrames
   });
 
+  console.log('📦 Remotion Props:');
+  console.log(props);
   console.log('');
   console.log('   🎬 Rendering video...');
+  console.log('');
+
+  const renderCmd = `npx remotion render Audiobook "${outputFile}" --codec h264 --fps ${fps} --concurrency 100% --x264-preset veryfast --jpeg-quality 80 --hardware-acceleration if-possible --props '${props}'`;
+  console.log('🔧 Render Command:');
+  console.log(renderCmd);
   console.log('');
 
   execSync(
