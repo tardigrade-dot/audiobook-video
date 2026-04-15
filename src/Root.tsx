@@ -57,9 +57,8 @@ const AudiobookWithSRT: React.FC = () => {
 
   // Load TOC content if tocPath is provided
   useEffect(() => {
-    if (!propsTocPath) return;
 
-    const tocPath = staticFile(propsTocPath);
+    const tocPath = propsTocPath ? staticFile(propsTocPath) : staticFile("example-toc.srt");
     fetch(tocPath)
       .then((res) => {
         if (!res.ok) {
